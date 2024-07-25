@@ -1,0 +1,98 @@
+---
+title: "Class Size"
+author: "Tanay Janmanchi"
+format: html
+execute:
+  echo: FALSE
+---
+
+```{r}
+#| label: setup
+#| message: FALSE
+
+library(tidyverse)
+library(brms)
+library(tidybayes)
+```
+
+```{r}
+#| label: reading-data
+#| message: FALSE
+
+class <- read_csv("Data/STAR.csv", show_col_types = FALSE)
+```
+
+```{r}
+#| label: cleaning
+#| cache: TRUE
+
+class <- class |> 
+  mutate(kinder = recode(classtype,
+                         `1` = "small",
+                         `2` = "regular",
+                         `3` = "regular with aid")) |> 
+  mutate(race = recode(race,
+                       `1` = "white",
+                       `2` = "black",
+                       `3` = "hispanic",
+                       `4` = "hispanic",
+                       `5` = "others",
+                       `6` = "others")) |>
+  filter(classtype != 3) |>
+  select(g4math, 
+         kinder) |>
+  drop_na()
+
+fit_class <- brm(formula = g4math ~ kinder,
+                 data = class,
+                  family = gaussian(),
+                  silent = 2,
+                  refresh = 0)
+```
+
+
+```{r}
+#| label: courage
+fit_class
+fixef(fit_class)
+pp_check(fit_class)
+```
+
+```{r}
+#| label: model
+
+ndata = tibble(kinder = c("regular", "small"))
+
+fit_class |>
+  add_epred_draws(newdata = ndata) |>
+  ggplot(aes(x = .epred)) +
+  geom_histogram(aes(fill = kinder),
+                 position = "identity",
+                 bins = 50,
+                 alpha = 0.5)
+```
+
+
+
+<!-- **Question**: What is the causal effect of class size on childrens' math score? -->
+
+<!-- **QoI**: Grade 4 math score -->
+
+<!-- **Preceptor Table**: One row for each individual student, two potential outcomes: math score for regular class size and math score for smaller class size. -->
+
+<!-- **Covariates**: Race, Years of small class size -->
+
+<!-- **Treatment**: Class size -->
+
+<!-- **Moment in Time**: 2024 -->
+
+<!-- **Validity**: Method of evaluating grade 4 math score might not have been consistent over the years. -->
+
+<!-- **Stability**: Children from the 1990s may have had a preference in class size as opposed to now. -->
+
+<!-- **Representativeness**: Children in Tennessee might not represent the greater population. -->
+
+<!-- **Unconfoundedness**:  -->
+
+
+
