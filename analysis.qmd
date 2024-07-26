@@ -13,6 +13,7 @@ execute:
 library(tidyverse)
 library(brms)
 library(tidybayes)
+library(gtsummary)
 ```
 
 ```{r}
@@ -50,29 +51,53 @@ fit_class <- brm(formula = g4math ~ kinder,
                   refresh = 0)
 ```
 
-
 ```{r}
-#| label: courage
-fit_class
-fixef(fit_class)
-pp_check(fit_class)
-```
-
-```{r}
-#| label: model
+#| label: models
+#| fig-height: 7
+#| fig-width: 15
 
 ndata = tibble(kinder = c("regular", "small"))
 
 fit_class |>
   add_epred_draws(newdata = ndata) |>
   ggplot(aes(x = .epred)) +
-  geom_histogram(aes(fill = kinder),
-                 position = "identity",
-                 bins = 50,
-                 alpha = 0.5)
+  geom_density(aes(fill = kinder),
+                   alpha = 0.5) +
+  scale_y_continuous(label = NULL) +
+  theme(axis.ticks.y = element_blank(),
+        text = element_text(size = 20)) +
+  labs(title = "Posterior for Class Score",
+       x = "Exam Score",
+       subtitle = "Class Size has no effect on exam score",
+       y = NULL,
+       fill = "Class Size")
+# 
+# class |>
+#   add_epred_draws(newdata = tibble(kinder = c("regular", "small"))) |>
+#   ungroup() |>
+#   group_by(.draw) |>
+#   select(kinder, .epred, .draw) |>
+#   pivot_wider(names_from = kinder, values_from = .epred) |>
+#   mutate(causal = small - regular) |>
+#   ggplot(aes(x = causal)) +
+#   geom_density()
+
 ```
 
+Using data from Tennessee Project STAR, we seek to understand the causal effect of putting students in smaller classrooms on their grade 4 math scores. Students are randomly assigned to a Kindergarten class of size small or regular, then in grade 4, the students take a math test to measure their progress. One challenge we encountered was that the method of evaluating grade 4 math score might not have been consistent over the years. We found that there is little to no effect of class size on math exam scores. We are 95% confident that the causal effect is between -4.5 and 3.9 and predict the causal effect to be -0.36.
 
+
+
+
+$$ score_i = \beta_0 + \beta_1 class\_size $$
+
+```{r}
+#| label: courage
+# fit_class
+# fixef(fit_class)
+# pp_check(fit_class)
+tbl_regression(fit_class)
+```
 
 <!-- **Question**: What is the causal effect of class size on childrens' math score? -->
 
